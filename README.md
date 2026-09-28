@@ -38,9 +38,17 @@
 
 ## Demo
 
-### Environment 
+### Environments 
 
-![1790529914591.png](https://tk-pichost-1325224430.cos.ap-chengdu.myqcloud.com/blog/1790529914591.png)
+![1790604410511.png](https://tk-pichost-1325224430.cos.ap-chengdu.myqcloud.com/blog/1790604410511.png)
+
+### Packages
+
+![1790604480519.png](https://tk-pichost-1325224430.cos.ap-chengdu.myqcloud.com/blog/1790604480519.png)
+
+### Search
+
+![1790604585208.png](https://tk-pichost-1325224430.cos.ap-chengdu.myqcloud.com/blog/1790604585208.png)
 
 ## Install
 
