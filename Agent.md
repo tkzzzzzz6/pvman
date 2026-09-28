@@ -89,5 +89,6 @@ go test ./internal/ui -run TestPkgFilter
 - 状态机/过滤/依赖分析的变更参考现有测试补充回归；涉及 subprocess 或 shell 的变更另做对应平台验证。
 - 现有单元测试无需实际 conda/uv 环境；它们不等于真实 CLI 集成验证。尤其 `TestDependenciesOverScriptOutput` 用内存 fixture 检查解析，不执行 Python。
 - 安装脚本默认下载独立 Go 1.26.1，可用 `PV_MAN_GO_VERSION` 覆盖；创建版本化 wrapper，安装 `github.com/tkzzzzzz6/pvman@latest` 并更新用户 PATH/shell 配置。不要把运行安装脚本当成本地源码验证，它安装的是远端版本。
+- 注意安装脚本与 Release 是两条不相交的路径：脚本用 `go install` 从源码构建，**不下载 Release 里的二进制**，所以改发布产物不会影响安装脚本的用户；反过来，Release 附件目前只服务直接下载的人。两者都要顾及时别只改一边。
 - 没有 Makefile，构建与发布全在 `.github/workflows/` 里；构建产物 `pvman`、`pvman.exe`、`dist/` 已被 `.gitignore` 忽略。
 - 发布链路的自检：`bash test/verify-release.sh v0.6.0` 拉回已发布的 Release 逐项校验，`--dir <目录>` 则校验手上已有的产物。注意 `--dir` 下若目录里没有 `checksums.txt`，脚本会跳过校验和一项并明确说明，只做包内文件与二进制头部检查。
