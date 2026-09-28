@@ -33,7 +33,12 @@ jobs:
         goos: [linux, darwin, windows]
         goarch: [amd64, arm64]
     steps:
+      # On a tag push this is the tag. On a manual run it has to be said
+      # explicitly: checkout would otherwise take the branch the workflow was
+      # launched from, and a run labelled v0.5.0 would ship main's HEAD.
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag || github.ref }}
 
       - uses: actions/setup-go@v5
         with:
