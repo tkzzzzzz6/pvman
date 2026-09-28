@@ -216,6 +216,7 @@ go1.26.1 download
 git clone https://github.com/tkzzzzzz6/pvman.git
 cd pvman
 go1.26.1 build -ldflags="-s -w" -o pvman .
+./pvman
 ```
 
 
