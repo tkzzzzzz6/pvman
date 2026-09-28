@@ -82,12 +82,6 @@ You can also use the downloaded Go directly without affecting your system `go`:
 go1.26.1 build -ldflags="-s -w" -o pvman .
 ```
 
-<!-- To install another Go version, set `PV_MAN_GO_VERSION` before running the script:
-
-```bash
-curl -fsSL --connect-timeout 15 --max-time 60 https://raw.githubusercontent.com/tkzzzzzz6/pvman/main/scripts/install.sh | PV_MAN_GO_VERSION=1.26.1 sh
-``` -->
-
 ### One-line install (Windows)
 
 Run the following command in PowerShell. It downloads Go 1.26.1 to a side
