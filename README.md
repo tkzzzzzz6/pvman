@@ -135,30 +135,32 @@ Press `esc` to go back to the environment list.
 
 ### Environment list
 
-| Key | Action |
-|-----|--------|
-| `j` / `↓` | Move down |
-| `k` / `↑` | Move up |
-| `enter` | Activate selected environment (opens a new shell) |
-| `p` | Browse and remove packages |
-| `n` | Create new uv environment |
-| `d` | Delete selected environment |
-| `f` | Filter the list by name |
-| `r` | Refresh list |
-| `q` | Quit |
-| `esc` | Cancel / close dialog |
+
+| Key        | Action                                            |
+| ---------- | ------------------------------------------------- |
+| `j` / `↓` | Move down                                         |
+| `k` / `↑` | Move up                                           |
+| `enter`    | Activate selected environment (opens a new shell) |
+| `p`        | Browse and remove packages                        |
+| `n`        | Create new uv environment                         |
+| `d`        | Delete selected environment                       |
+| `f`        | Filter the list by name                           |
+| `r`        | Refresh list                                      |
+| `q`        | Quit                                              |
+| `esc`      | Cancel / close dialog                             |
 
 ### Package list
 
-| Key | Action |
-|-----|--------|
-| `j` / `↓` | Move down |
-| `k` / `↑` | Move up |
-| `space` | Tick / untick the highlighted package |
-| `a` | Select all (press again to clear) |
-| `f` | Filter the list by name |
-| `d` | Delete all ticked packages (asks for confirmation) |
-| `esc` / `q` / `p` | Back to the environment list |
+
+| Key               | Action                                             |
+| ----------------- | -------------------------------------------------- |
+| `j` / `↓`        | Move down                                          |
+| `k` / `↑`        | Move up                                            |
+| `space`           | Tick / untick the highlighted package              |
+| `a`               | Select all (press again to clear)                  |
+| `f`               | Filter the list by name                            |
+| `d`               | Delete all ticked packages (asks for confirmation) |
+| `esc` / `q` / `p` | Back to the environment list                       |
 
 ### Filtering
 
@@ -167,11 +169,12 @@ the rows containing what you type, ignoring case — `ng` finds `libgcc-ng`, and
 `REQ` finds `requests` and `requests-toolbelt` alike. The box takes the
 keyboard while it is open, so nothing you type can tick, delete or quit.
 
-| Key | Action |
-|-----|--------|
+
+| Key         | Action                                                       |
+| ----------- | ------------------------------------------------------------ |
 | `↑` / `↓` | Move the cursor through the matches, without closing the box |
-| `enter` | Close the box and keep the filter on the list |
-| `esc` | Close the box and clear the filter |
+| `enter`     | Close the box and keep the filter on the list                |
+| `esc`       | Close the box and clear the filter.                          |
 
 With a filter applied, `a` selects the packages **on screen** — a tick you made
 before typing is neither extended to the hidden rows nor dropped, and the title
@@ -197,11 +200,12 @@ with, split into two groups:
   does not reach is never listed, so something you installed deliberately stays
   put.
 
-| Key | Action |
-|-----|--------|
-| `y` | Delete the ticked packages **and** everything listed |
-| `n` | Delete only the ticked packages, leaving the rest as it falls |
-| `esc` | Cancel, deleting nothing |
+
+| Key   | Action                                                        |
+| ----- | ------------------------------------------------------------- |
+| `y`   | Delete the ticked packages**and** everything listed           |
+| `n`   | Delete only the ticked packages, leaving the rest as it falls |
+| `esc` | Cancel, deleting nothing                                      |
 
 Note that **pip and uv do not cascade** — `n` really does leave dependents
 broken. conda's solver, by contrast, removes far more than it is asked to: a
@@ -221,7 +225,6 @@ cd pvman
 go1.26.1 build -ldflags="-s -w" -o pvman .
 ./pvman
 ```
-
 
 ## Requirements
 
