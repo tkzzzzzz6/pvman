@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  push:
+    # Only tags, so an ordinary push to main never publishes anything. `v*`
+    # matches v0.5.0 but not a stray tag like `wip`.
+    tags: ['v*']
+  # Re-publishing a tag, or publishing one that predates this workflow.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release, e.g. v0.5.0'
+        required: true
+
+# Creating a release writes to the repository, so this workflow needs the one
+# permission CI deliberately declines. It is scoped to the whole workflow
+# rather than granted globally.
+permissions:
+  contents: write
+
+env:
+  # On a tag push this is the tag; on a manual run it is the input, falling back
+  # to the branch name if the box was left empty.
+  VERSION: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    name: build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]
+        goarch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # The release binary is what users run, so it is built from a tree that
+      # passed its own tests — not from whatever last happened to be green.
+      - name: Test
+        run: go test ./...
+
+      - name: Build and archive
+        shell: bash
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          # bubbletea and lipgloss are pure Go, so no cgo is needed and one
+          # runner can produce every platform's binary.
+          CGO_ENABLED: '0'
+        run: |
+          set -euo pipefail
+
+          # Strip the leading v so archives read pvman_0.5.0_linux_amd64.
+          version="${VERSION#v}"
+          name="pvman_${version}_${GOOS}_${GOARCH}"
+
+          if [ "$GOOS" = windows ]; then
+            bin=pvman.exe
+          else
+            bin=pvman
+          fi
+
+          mkdir -p dist
+          # -trimpath keeps the build machine's paths out of the binary;
+          # -s -w drops the symbol table and DWARF data.
+          go build -trimpath -ldflags="-s -w" -o "dist/$bin" .
+
+          if [ "$GOOS" = windows ]; then
+            (cd dist && zip -q "${name}.zip" "$bin")
+          else
+            tar -C dist -czf "dist/${name}.tar.gz" "$bin"
+          fi
+          rm -f "dist/$bin"
+
+          ls -l dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pvman-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    # The `env` context is not available in a job's name, so the expression is
+    # repeated rather than reading VERSION.
+    name: publish ${{ github.event.inputs.tag || github.ref_name }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          # Flatten the six per-platform artifact directories into one.
+          merge-multiple: true
+
+      # Checksums let a user verify that a download arrived intact, and let
+      # install scripts pin an exact byte sequence.
+      #
+      # The loop names the asset types explicitly, so a stale checksums.txt
+      # cannot checksum itself, and it drops the ./ that `sha256sum ./*` would
+      # otherwise write into every line.
+      - name: Generate checksums
+        run: |
+          set -euo pipefail
+          cd dist
+          for f in *.tar.gz *.zip; do
+            sha256sum "$f"
+          done > checksums.txt
+          cat checksums.txt
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$VERSION" >/dev/null 2>&1; then
+            echo "release $VERSION exists, replacing its assets"
+            gh release upload "$VERSION" dist/* --clobber
+          else
+            gh release create "$VERSION" dist/* \
+              --title "pvman $VERSION" \
+              --generate-notes
+          fi

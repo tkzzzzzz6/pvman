@@ -1,0 +1,17 @@
+# Git stores LF in every blob, and checks LF out on every platform. Without
+# this, core.autocrlf=true turns the working tree back into CRLF on Windows,
+# which is what makes `gofmt -l .` flag every file there while it passes on
+# Linux and macOS.
+#
+# An existing Windows checkout keeps its CRLF files until they are rewritten:
+#
+#   git add --renormalize . && git checkout -- .
+#
+# A fresh clone gets LF from the start.
+* text=auto eol=lf
+
+# cmd.exe is happiest with CRLF in a batch file, and PowerShell's parser is
+# unforgiving about a lone LF in some contexts. These two are Windows-only, so
+# pinning them costs nothing anywhere else.
+*.bat text eol=crlf
+*.ps1 text eol=crlf

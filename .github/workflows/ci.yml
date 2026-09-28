@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Lets you run the whole thing by hand from the Actions tab, which is the
+  # fastest way to check a workflow edit without pushing a commit.
+  workflow_dispatch:
+
+# A newer push to the same branch makes the run in flight irrelevant, so stop
+# paying for it. The group is per-ref, so main and a PR branch never collide.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# The workflow only reads the repository. Declaring that here means a step that
+# tries to write (a compromised dependency, say) fails instead of succeeding.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # One broken platform must not cancel the other two — learning that
+      # Windows fails is only useful alongside whether Linux still passes.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      # go-version-file reads the `go` directive out of go.mod, so the CI
+      # toolchain can never drift from the one the module declares.
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...
+
+      # gofmt rejects CRLF, and a Windows checkout is CRLF whenever the runner's
+      # core.autocrlf is true, so the check runs against LF-normalised copies
+      # instead of the working tree. One platform is enough: the bytes being
+      # measured are identical after normalisation.
+      - name: Check formatting
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          while IFS= read -r -d '' f; do
+            mkdir -p "$tmp/$(dirname "$f")"
+            tr -d '\r' < "$f" > "$tmp/$f"
+          done < <(git ls-files -z -- '*.go')
+
+          out="$(cd "$tmp" && gofmt -l .)"
+          if [ -n "$out" ]; then
+            echo "::error::these files are not gofmt-formatted:"
+            echo "$out"
+            (cd "$tmp" && gofmt -d .) | head -100
+            exit 1
+          fi
+          echo "all Go files are gofmt-formatted"
