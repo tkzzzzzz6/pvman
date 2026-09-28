@@ -7,9 +7,7 @@
 		</td>
 		<td>
 			<h2 align="center">
-				<span style="font-family: 'Hiragino Maru Gothic ProN', 'Yu Gothic', 'Comic Sans MS', cursive; font-size: 1.4em; font-style: italic; font-weight: 900; letter-spacing: 0.08em; padding: 0 10px 4px; border-bottom: 3px solid #9bdcff; text-shadow: 1px 1px 0 #d9f3ff;">
-					<span style="color: #4db8ff;">pv</span><span style="color: #ff4d5a;">man</span>
-				</span>
+				<img src="assets/wordmark.png" alt="pvman" width="157" height="39">
 			</h2>
 			A terminal UI for managing Python virtual environments, with conda and uv side by side.
 		</td>
