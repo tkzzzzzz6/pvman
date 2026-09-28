@@ -16,6 +16,7 @@
 	</tr>
 </table>
 
+[![CI](https://github.com/tkzzzzzz6/pvman/actions/workflows/ci.yml/badge.svg)](https://github.com/tkzzzzzz6/pvman/actions/workflows/ci.yml)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/tkzzzzzz6/pvman?logo=go&style=flat)](go.mod)
 [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat)](https://github.com/tkzzzzzz6/pvman)
 [![License](https://img.shields.io/badge/license-MIT-green?style=flat)](LICENSE)
@@ -36,6 +37,8 @@
 - Vim-style (`j`/`k`) and arrow key navigation
 
 ## Demo
+
+### Environment 
 
 ![1790529914591.png](https://tk-pichost-1325224430.cos.ap-chengdu.myqcloud.com/blog/1790529914591.png)
 
