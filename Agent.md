@@ -22,6 +22,10 @@
 | `internal/uv/uv.go` | venv 扫描/创建/删除、uv pip 包操作、Python 元数据依赖解析、激活命令 |
 | `internal/{ui,conda,uv}/*_test.go` | 同包测试，可直接测试未导出函数；主要覆盖纯逻辑、状态转换、布局和临时文件元数据 |
 | `scripts/install.sh` / `install.ps1` / `install.bat` | 用户安装流程；bat 下载并执行远端 PowerShell 脚本 |
+| `test/verify-release.sh` | 校验已发布的 Release：校验和、包内文件、以及二进制头部是否真属于文件名声称的平台与架构 |
+| `.github/workflows/ci.yml` | 三平台矩阵的 build / vet / test / gofmt 门禁 |
+| `.github/workflows/release.yml` | `v*` tag 触发；交叉编译六目标并发布到 GitHub Release |
+| `.gitattributes` | 行尾策略；改动 Go 文件前先读「开发与验证」里的行尾说明 |
 | `README.md` | 用户文档；行为变更时同步，但先核实实现 |
 
 ## UI 数据流与必须保留的语义
@@ -71,8 +75,19 @@ go test ./internal/ui -run TestPkgFilter
 ```
 
 - `go run .` 需要交互终端，会读取启动目录和本机环境；纯逻辑验证优先使用测试。
-- 修改 Go 文件后对所改文件运行 `gofmt -w <files>`。状态机/过滤/依赖分析的变更参考现有测试补充回归；涉及 subprocess 或 shell 的变更另做对应平台验证。
+- **行尾陷阱，先读这条再动 Go 文件。** `.gitattributes` 规定 `* text=auto eol=lf`，git 里存 LF；但 `core.autocrlf=true` 且工作区是既有检出，所以**磁盘上多数 `.go` 文件目前仍是 CRLF**（9 个里 6 个）；已是 LF 的是少数，且纯属历史遗留、不是约定——别照着它们推断哪个文件"应该"是什么行尾，看 `.gitattributes`。后果：`gofmt -l .` 会把每个 CRLF 文件都判为未格式化，而 **`gofmt -w` 会把 CRLF 静默改写成 LF**——于是你改过的文件变 LF、没改的仍 CRLF，制造混合行尾。
+  - 判断格式而非行尾：把去 CR 的内容分别与 `gofmt` 的输出比较，两者一致即已格式化。
+
+    ```bash
+    diff -q <(tr -d '\r' < f.go) <(tr -d '\r' < f.go | gofmt) >/dev/null \
+      && echo 已格式化 || echo 未格式化
+    ```
+
+    不要用 `tr -d '\r' < f.go | gofmt -l /dev/stdin`：Windows 上 gofmt 取不到该路径，会以 `GetFileAttributesEx /proc/self/fd/0` 失败并返回 2。
+  - 提交前不要依赖 `gofmt -l .` 的空输出；CI 的 gofmt 步骤是对归一化副本判定的，本地不做归一化会得到不同结论。
+  - 一次性把工作区统一成 LF：`git add --renormalize . && git checkout -- .`。
+- 状态机/过滤/依赖分析的变更参考现有测试补充回归；涉及 subprocess 或 shell 的变更另做对应平台验证。
 - 现有单元测试无需实际 conda/uv 环境；它们不等于真实 CLI 集成验证。尤其 `TestDependenciesOverScriptOutput` 用内存 fixture 检查解析，不执行 Python。
 - 安装脚本默认下载独立 Go 1.26.1，可用 `PV_MAN_GO_VERSION` 覆盖；创建版本化 wrapper，安装 `github.com/tkzzzzzz6/pvman@latest` 并更新用户 PATH/shell 配置。不要把运行安装脚本当成本地源码验证，它安装的是远端版本。
-- 当前没有仓库内 CI 配置或 Makefile；构建产物 `pvman`、`pvman.exe`、`dist/` 已忽略。
-- 本文件为静态浏览所得；此次仅新增上下文文档，未执行构建、单元测试或交互集成测试。
+- 没有 Makefile，构建与发布全在 `.github/workflows/` 里；构建产物 `pvman`、`pvman.exe`、`dist/` 已被 `.gitignore` 忽略。
+- 发布链路的自检：`bash test/verify-release.sh v0.6.0` 拉回已发布的 Release 逐项校验，`--dir <目录>` 则校验手上已有的产物。注意 `--dir` 下若目录里没有 `checksums.txt`，脚本会跳过校验和一项并明确说明，只做包内文件与二进制头部检查。
