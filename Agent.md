@@ -20,6 +20,7 @@
 | `internal/ui/styles.go` | Lip Gloss 样式、颜色、`formatSize` |
 | `internal/conda/conda.go` | 环境发现、详情、包列表、conda-meta 依赖解析、conda/pip 删除、激活命令 |
 | `internal/uv/uv.go` | venv 扫描/创建/删除、uv pip 包操作、Python 元数据依赖解析、激活命令 |
+| `internal/update/` | `pvman --update` 自更新：识别安装渠道并走原渠道升级；版本解析/比较、校验和验证、Windows 暂存替换 |
 | `internal/{ui,conda,uv}/*_test.go` | 同包测试，可直接测试未导出函数；主要覆盖纯逻辑、状态转换、布局和临时文件元数据 |
 | `scripts/install.sh` / `install.ps1` / `install.bat` | 用户安装流程；bat 下载并执行远端 PowerShell 脚本 |
 | `test/verify-release.sh` | 校验已发布的 Release：校验和、包内文件、以及二进制头部是否真属于文件名声称的平台与架构 |
@@ -61,6 +62,15 @@
 - `activateCmd()` 用 `tea.ExecProcess` 暂停 TUI 并接管终端，退出子 shell 后回到 TUI；不是修改父 shell 环境。Windows 根据 `PSModulePath` 选择 powershell/cmd，Unix 使用 `$SHELL`（缺省 bash），conda 会先运行 shell hook。
 - 当前 uv Windows 激活字符串是 `activate.bat`，包括走 PowerShell 分支时；conda 激活用环境名。更改时需实测 shell 与含空格路径，不要假定所有 shell 都兼容。
 - README 提到一键复制激活命令，但当前按键路由没有对应实现；README 的“任意视图 Ctrl+C 退出”也不是所有状态分支都实现。不要据此向下游宣称这些行为已支持。
+
+## 自更新（`pvman --update`）
+
+- 升级必须走**原安装渠道**，不得互换：`os.Executable()` 在 Go bin 目录（`$GOBIN`/`$GOPATH/bin`，比较时忽略大小写）→ `go install ...@latest` 渠道；否则按 Release 资产处理。渠道互换来会悄悄改变用户的安装方式。
+- 版本来源三级：release 构建由 `-ldflags -X main.version=` 注入（release.yml 负责）；`go install` 装的从 `debug.ReadBuildInfo().Main.Version` 恢复；其余（VCS 检出的伪版本如 `v0.6.2-0.2026...+dirty`）一律视为 `dev`，拒绝自更新并只给指引。
+- Release 渠道下载后必须先用 release 里的 `checksums.txt` 验 sha256 再替换；校验失败即中止。
+- Windows 不能覆盖/重命名运行中的 exe，`go install` 渠道也不例外。两个渠道统一走暂存：新二进制写到目标旁 `*.new`，分离一个 PowerShell 帮手 `Wait-Process` 等本进程退出后 `Move-Item`。Unix 直接 `os.Rename`（运行中进程持有旧 inode）。
+- GitHub API 未认证限流（每 IP 60/hr，NAT 后更紧张）不得阻断 go install 渠道——`@latest` 自身能解析最新版，API 挂了照样升级；Release 渠道没有退路才允许失败，且报错里附带手动命令。
+- 语义化版本比较自研在 `version.go`（含 prerelease 规则），`0.10.0 > 0.9.0`，禁止用字符串比较版本。
 
 ## 开发与验证
 

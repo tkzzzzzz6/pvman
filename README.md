@@ -7,7 +7,7 @@
 		</td>
 		<td>
 			<h2 align="center">
-				<img src="assets/wordmark.png" alt="pvman" width="157" height="39">
+				<img src="https://tk-pichost-1325224430.cos.ap-chengdu.myqcloud.com/blog/1790649861135.png" alt="pvman" width="157" height="39">
 			</h2>
 			A terminal UI for managing Python virtual environments, with conda and uv side by side.
 		</td>
@@ -122,6 +122,18 @@ pvman
 ```
 
 It will show all your conda environments and scan the current directory for uv venvs.
+
+### Updating
+
+```bash
+pvman --update
+```
+
+This upgrades pvman in place, using whichever way it was installed:
+re-running `go install ...@latest` for binaries the install scripts placed in
+the Go bin directory, or downloading and checksum-verifying the matching
+release archive for binaries you unpacked by hand. Check the version with
+`pvman --version`.
 
 Press `enter` on a selected environment to open a new shell with that environment
 activated. Type `exit` in the shell to return to `pvman`.

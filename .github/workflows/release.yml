@@ -73,8 +73,10 @@ jobs:
 
           mkdir -p dist
           # -trimpath keeps the build machine's paths out of the binary;
-          # -s -w drops the symbol table and DWARF data.
-          go build -trimpath -ldflags="-s -w" -o "dist/$bin" .
+          # -s -w drops the symbol table and DWARF data. -X main.version
+          # stamps the release tag in, so `pvman --version` and the
+          # self-updater (`pvman --update`) know what they are running.
+          go build -trimpath -ldflags="-s -w -X main.version=${version}" -o "dist/$bin" .
 
           if [ "$GOOS" = windows ]; then
             (cd dist && zip -q "${name}.zip" "$bin")
