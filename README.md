@@ -7,7 +7,7 @@
 		</td>
 		<td>
 			<h2 align="center">
-				<img src="https://tk-pichost-1325224430.cos.ap-chengdu.myqcloud.com/blog/1790649861135.png" alt="pvman" width="157" height="39">
+				<img src="./assets/wordmark.png" alt="pvman" width="157" height="39">
 			</h2>
 			A terminal UI for managing Python virtual environments, with conda and uv side by side.
 		</td>
