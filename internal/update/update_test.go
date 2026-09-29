@@ -84,17 +84,25 @@ func TestIsReleaseVersion(t *testing.T) {
 }
 
 func TestDetectChannel(t *testing.T) {
-	cases := []struct {
+	type channelCase struct {
 		exe  string
 		bins []string
 		want Channel
-	}{
+	}
+	cases := []channelCase{
 		{"/home/u/go/bin/pvman", []string{"/home/u/go/bin"}, ChannelGoInstall},
-		{`C:\Users\u\go\bin\pvman.exe`, []string{`C:\Users\u\go\bin`}, ChannelGoInstall},
-		{`C:\Users\u\go\bin\pvman.exe`, []string{`c:\users\u\go\bin`}, ChannelGoInstall}, // case-insensitive
 		{"/opt/bin/pvman", []string{"/home/u/go/bin"}, ChannelBinary},
 		{"/home/u/go/bin/pvman", []string{"/home/u/go/bin-extra"}, ChannelBinary}, // no prefix matching
 		{"/home/u/go/bin/pvman", nil, ChannelBinary},
+	}
+	if runtime.GOOS == "windows" {
+		// Backslash-separated paths only parse as directories on Windows;
+		// on other platforms filepath treats them as one opaque name, so
+		// these cases belong to the Windows runner only.
+		cases = append(cases,
+			channelCase{`C:\Users\u\go\bin\pvman.exe`, []string{`C:\Users\u\go\bin`}, ChannelGoInstall},
+			channelCase{`C:\Users\u\go\bin\pvman.exe`, []string{`c:\users\u\go\bin`}, ChannelGoInstall}, // case-insensitive
+		)
 	}
 	for _, c := range cases {
 		if got := detectChannel(c.exe, c.bins); got != c.want {
