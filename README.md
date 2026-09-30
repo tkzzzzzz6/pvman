@@ -52,9 +52,10 @@
 
 ### One-line install (Linux / macOS)
 
-The install script automatically detects the operating system and CPU architecture,
-downloads Go 1.26.1 to a side directory (`~/.local/go1.26.1`), adds a `go1.26.1`
-wrapper, and installs `pvman`. It does **not** change your default `go` command:
+The script detects your operating system and CPU architecture, downloads the
+prebuilt `pvman` binary from the latest GitHub release, verifies it against the
+release's `checksums.txt`, and installs it to `~/.local/bin`. No Go toolchain is
+needed, nothing is compiled, and nothing else on your machine is touched:
 
 ```bash
 curl -fsSL --connect-timeout 15 --max-time 60 https://raw.githubusercontent.com/tkzzzzzz6/pvman/main/scripts/install.sh | sh
@@ -66,26 +67,27 @@ Or use `wget`:
 wget --timeout=15 --tries=1 -qO- https://raw.githubusercontent.com/tkzzzzzz6/pvman/main/scripts/install.sh | sh
 ```
 
-The script supports Linux and macOS on `amd64` and `arm64`. After installation,
-reload your shell and run the program:
+Linux and macOS on `amd64` and `arm64` are supported. If `~/.local/bin` is not
+already on your `PATH` the script adds it to `~/.zshrc`, `~/.bashrc` or
+`~/.profile`. Then reload your shell and run the program:
 
 ```bash
-source ~/.bashrc  # or use ~/.zshrc for zsh
+source ~/.zshrc   # or ~/.bashrc / ~/.profile
 pvman
 ```
 
-You can also use the downloaded Go directly without affecting your system `go`:
+Two environment variables are honoured:
 
-```bash
-go1.26.1 build -ldflags="-s -w" -o pvman .
-```
+| Variable             | Effect                                                      |
+| -------------------- | ----------------------------------------------------------- |
+| `PV_MAN_VERSION`     | Install a specific tag rather than the latest, e.g. `0.7.0`  |
+| `PV_MAN_INSTALL_DIR` | Install somewhere else; this also skips the `PATH` edit      |
 
 ### One-line install (Windows)
 
-Run the following command in PowerShell. It downloads Go 1.26.1 to a side
-directory, adds a `go1.26.1` wrapper, and installs `pvman` for the current
-Windows user, without requiring administrator privileges. Your default `go`
-command is left untouched:
+Run the following command in PowerShell. It installs the prebuilt `pvman` binary
+from the latest GitHub release for the current Windows user, verifies it against
+the release's `checksums.txt`, and needs no administrator privileges:
 
 ```powershell
 irm https://raw.githubusercontent.com/tkzzzzzz6/pvman/main/scripts/install.ps1 | iex
@@ -98,14 +100,27 @@ curl.exe -fsSL https://raw.githubusercontent.com/tkzzzzzz6/pvman/main/scripts/in
 install-pvman.bat
 ```
 
-The Windows installer supports `amd64` and `arm64`. Open a new terminal after
-installation, then run `pvman` or `go1.26.1`.
+The Windows installer supports `amd64` and `arm64`, installs to
+`%LOCALAPPDATA%\pvman\bin`, and appends that directory to your user `PATH`.
+`PV_MAN_VERSION` and `PV_MAN_INSTALL_DIR` work here too. Open a new terminal
+after installation, then run `pvman`.
 
 ### Go install
 
-If you already have a working `go` installation, you can install a versioned
-`go1.26.1` command without touching your default `go`. The first time you use
-`go1.26.1`, download the full toolchain:
+If you would rather build pvman from source, install it with the Go toolchain
+you already have. pvman requires Go 1.26.1 or newer:
+
+```bash
+go install github.com/tkzzzzzz6/pvman@latest
+```
+
+The binary lands in `$(go env GOPATH)/bin`. pvman notices it was installed this
+way, and `pvman --update` refreshes it with `go install ...@latest`.
+
+If you would rather not touch your default `go`, the official versioned
+toolchain works as well -- but note that `go1.26.1 download` fetches a full
+~60 MB SDK into `~/sdk`, and `go1.26.1 install` fails with
+`not downloaded` until you have run it:
 
 ```bash
 go install golang.org/dl/go1.26.1@latest
@@ -129,11 +144,19 @@ It will show all your conda environments and scan the current directory for uv v
 pvman --update
 ```
 
-This upgrades pvman in place, using whichever way it was installed:
-re-running `go install ...@latest` for binaries the install scripts placed in
-the Go bin directory, or downloading and checksum-verifying the matching
-release archive for binaries you unpacked by hand. Check the version with
+This replaces the binary in place with the newest release. pvman picks the
+method from where the running binary lives: a binary in your Go bin directory is
+refreshed with `go install github.com/tkzzzzzz6/pvman@latest`, and anything else
+is upgraded by downloading the matching release archive and checking its SHA-256
+against `checksums.txt` before swapping it in. Check the running version with
 `pvman --version`.
+
+This is also why the install scripts use `~/.local/bin` (and
+`%LOCALAPPDATA%\pvman\bin`) instead of a Go bin directory. Channel detection
+only looks at the binary's directory, so a release binary sitting in
+`GOPATH/bin` would be mistaken for a `go install` one and try to upgrade through
+a toolchain that was never set up. Moving the binary into your Go bin directory
+by hand has the same effect -- leave it where the installer put it.
 
 Press `enter` on a selected environment to open a new shell with that environment
 activated. Type `exit` in the shell to return to `pvman`.
@@ -229,12 +252,12 @@ transaction summary, rather than the number you asked for.
 
 ## Build from source
 
+Requires Go 1.26.1 or newer.
+
 ```bash
-go install golang.org/dl/go1.26.1@latest
-go1.26.1 download
 git clone https://github.com/tkzzzzzz6/pvman.git
 cd pvman
-go1.26.1 build -ldflags="-s -w" -o pvman .
+go build -ldflags="-s -w" -o pvman .
 ./pvman
 ```
 
