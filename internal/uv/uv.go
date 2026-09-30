@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 )
 
 type Env struct {
@@ -20,6 +21,7 @@ type Env struct {
 	PythonVer string
 	PkgCount  int
 	SizeBytes int64
+	CreatedAt time.Time // zero when it cannot be determined
 	Loaded    bool
 }
 
@@ -55,7 +57,18 @@ func LoadDetails(env *Env) {
 	env.PythonVer = getPythonVersionFromCfg(env.Path)
 	env.PkgCount = getPkgCount(env.Path)
 	env.SizeBytes = getDirSize(env.Path)
+	env.CreatedAt = getCreatedAt(env.Path)
 	env.Loaded = true
+}
+
+// getCreatedAt reports when the venv was created, taken from pyvenv.cfg, which
+// is written once when the venv is made and not touched by installing packages.
+func getCreatedAt(envPath string) time.Time {
+	info, err := os.Stat(filepath.Join(envPath, "pyvenv.cfg"))
+	if err != nil {
+		return time.Time{}
+	}
+	return info.ModTime()
 }
 
 func getPythonVersionFromCfg(envPath string) string {

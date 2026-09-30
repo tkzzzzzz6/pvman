@@ -1,8 +1,11 @@
 package uv
 
 import (
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestNormalizeName(t *testing.T) {
@@ -93,5 +96,24 @@ func TestDependenciesOverScriptOutput(t *testing.T) {
 	// rich's only requirement is an extra and must be dropped.
 	if got := deps["rich"]; len(got) != 0 {
 		t.Errorf("rich depends on %v, want none (extras are not installed)", got)
+	}
+}
+
+func TestGetCreatedAt(t *testing.T) {
+	env := t.TempDir()
+	cfg := filepath.Join(env, "pyvenv.cfg")
+	if err := os.WriteFile(cfg, []byte("version = 3.13.0\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	want := time.Date(2026, 3, 13, 14, 13, 31, 0, time.UTC)
+	if err := os.Chtimes(cfg, want, want); err != nil {
+		t.Fatal(err)
+	}
+
+	if got := getCreatedAt(env); !got.Equal(want) {
+		t.Errorf("getCreatedAt = %v, want %v", got, want)
+	}
+	if got := getCreatedAt(filepath.Join(env, "missing")); !got.IsZero() {
+		t.Errorf("getCreatedAt on missing env = %v, want zero", got)
 	}
 }

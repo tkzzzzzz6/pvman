@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 )
@@ -116,4 +117,29 @@ func formatSize(bytes int64) string {
 	default:
 		return fmt.Sprintf("%d B", bytes)
 	}
+}
+
+// formatAge renders a creation time as its date plus how long ago that was,
+// e.g. "2025-12-06 (9mo ago)". A zero time means it could not be determined.
+func formatAge(t, now time.Time) string {
+	if t.IsZero() {
+		return "unknown"
+	}
+	d := now.Sub(t)
+	var ago string
+	switch {
+	case d < time.Minute: // includes a clock that runs behind the file's
+		ago = "just now"
+	case d < time.Hour:
+		ago = fmt.Sprintf("%dm ago", int(d/time.Minute))
+	case d < 24*time.Hour:
+		ago = fmt.Sprintf("%dh ago", int(d/time.Hour))
+	case d < 30*24*time.Hour:
+		ago = fmt.Sprintf("%dd ago", int(d/(24*time.Hour)))
+	case d < 365*24*time.Hour:
+		ago = fmt.Sprintf("%dmo ago", int(d/(30*24*time.Hour)))
+	default:
+		ago = fmt.Sprintf("%dy ago", int(d/(365*24*time.Hour)))
+	}
+	return t.Local().Format("2006-01-02") + " (" + ago + ")"
 }

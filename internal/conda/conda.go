@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 )
 
 type Env struct {
@@ -18,6 +19,7 @@ type Env struct {
 	PythonVer string
 	PkgCount  int
 	SizeBytes int64
+	CreatedAt time.Time // zero when it cannot be determined
 	Loaded    bool
 }
 
@@ -99,7 +101,34 @@ func LoadDetails(env *Env) {
 	env.PythonVer = getPythonVersion(env.Path)
 	env.PkgCount = getPkgCount(env.Path)
 	env.SizeBytes = GetDirSize(env.Path)
+	env.CreatedAt = getCreatedAt(env.Path)
 	env.Loaded = true
+}
+
+// getCreatedAt estimates when the environment was created from the oldest
+// package record in conda-meta, each of which is written when that package is
+// installed. The first entry of conda-meta/history looks like the obvious
+// source but is not: for base it carries the date the installer was built on
+// someone else's machine, not the date it was installed here.
+func getCreatedAt(envPath string) time.Time {
+	entries, err := os.ReadDir(filepath.Join(envPath, "conda-meta"))
+	if err != nil {
+		return time.Time{}
+	}
+	var oldest time.Time
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		if t := info.ModTime(); oldest.IsZero() || t.Before(oldest) {
+			oldest = t
+		}
+	}
+	return oldest
 }
 
 func getPythonVersion(envPath string) string {

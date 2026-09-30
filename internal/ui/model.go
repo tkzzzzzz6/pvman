@@ -8,6 +8,7 @@ import (
 	"runtime"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/spinner"
@@ -945,6 +946,7 @@ func (m Model) renderDetail(w, h int) string {
 	var name, path, pythonVer, envType string
 	var pkgCount int
 	var sizeBytes int64
+	var createdAt time.Time
 	var loaded bool
 	var activateCmd string
 
@@ -952,12 +954,14 @@ func (m Model) renderDetail(w, h int) string {
 		e := m.condaEnvs[sel.idx]
 		name, path, pythonVer = e.Name, e.Path, e.PythonVer
 		pkgCount, sizeBytes, loaded = e.PkgCount, e.SizeBytes, e.Loaded
+		createdAt = e.CreatedAt
 		envType = "conda"
 		activateCmd = conda.ActivateCmd(e)
 	} else if sel.envType == "uv" && sel.idx < len(m.uvEnvs) {
 		e := m.uvEnvs[sel.idx]
 		name, path, pythonVer = e.Name, e.Path, e.PythonVer
 		pkgCount, sizeBytes, loaded = e.PkgCount, e.SizeBytes, e.Loaded
+		createdAt = e.CreatedAt
 		envType = "uv"
 		activateCmd = uv.ActivateCmd(e)
 	}
@@ -984,6 +988,7 @@ func (m Model) renderDetail(w, h int) string {
 		sb.WriteString(row("Python", pythonVer))
 		sb.WriteString(row("Packages", fmt.Sprintf("%d", pkgCount)))
 		sb.WriteString(row("Size", formatSize(sizeBytes)))
+		sb.WriteString(row("Created", formatAge(createdAt, time.Now())))
 	} else {
 		sb.WriteString(m.spinner.View() + " loading details...\n")
 	}

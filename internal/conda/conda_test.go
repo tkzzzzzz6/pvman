@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+	"time"
 )
 
 // writeMeta lays down a fake conda-meta record.
@@ -89,5 +90,38 @@ func TestDepName(t *testing.T) {
 func TestDependenciesOnMissingEnv(t *testing.T) {
 	if _, _, err := Dependencies(Env{Name: "gone", Path: filepath.Join(t.TempDir(), "nope")}); err == nil {
 		t.Fatal("expected an error for an environment with no conda-meta directory")
+	}
+}
+
+func TestGetCreatedAtUsesOldestRecord(t *testing.T) {
+	env := t.TempDir()
+	meta := filepath.Join(env, "conda-meta")
+	if err := os.Mkdir(meta, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	writeMeta(t, meta, "python-3.12.json", "python", nil)
+	writeMeta(t, meta, "numpy-2.0.json", "numpy", nil)
+	if err := os.WriteFile(filepath.Join(meta, "history"), []byte("==> 2020-01-01 00:00:00 <==\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	oldest := time.Date(2025, 12, 6, 11, 4, 46, 0, time.UTC)
+	stamp := map[string]time.Time{
+		"python-3.12.json": oldest,
+		"numpy-2.0.json":   oldest.Add(48 * time.Hour),
+		// Not a package record, so it must not win even though it is older.
+		"history": oldest.Add(-365 * 24 * time.Hour),
+	}
+	for f, ts := range stamp {
+		if err := os.Chtimes(filepath.Join(meta, f), ts, ts); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if got := getCreatedAt(env); !got.Equal(oldest) {
+		t.Errorf("getCreatedAt = %v, want %v", got, oldest)
+	}
+	if got := getCreatedAt(filepath.Join(env, "missing")); !got.IsZero() {
+		t.Errorf("getCreatedAt on missing env = %v, want zero", got)
 	}
 }

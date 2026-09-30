@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -1192,4 +1193,30 @@ func mkPkgs(n int) []string {
 		out[i] = fmt.Sprintf("pkg%d", i)
 	}
 	return out
+}
+
+func TestFormatAge(t *testing.T) {
+	now := time.Date(2026, 9, 30, 12, 0, 0, 0, time.Local)
+	cases := []struct {
+		ago  time.Duration
+		want string
+	}{
+		{-time.Hour, "just now"}, // file dated ahead of the clock
+		{30 * time.Second, "just now"},
+		{5 * time.Minute, "5m ago"},
+		{3 * time.Hour, "3h ago"},
+		{29 * 24 * time.Hour, "29d ago"},
+		{95 * 24 * time.Hour, "3mo ago"},
+		{800 * 24 * time.Hour, "2y ago"},
+	}
+	for _, c := range cases {
+		created := now.Add(-c.ago)
+		want := created.Format("2006-01-02") + " (" + c.want + ")"
+		if got := formatAge(created, now); got != want {
+			t.Errorf("formatAge(now-%v) = %q, want %q", c.ago, got, want)
+		}
+	}
+	if got := formatAge(time.Time{}, now); got != "unknown" {
+		t.Errorf("formatAge(zero) = %q, want %q", got, "unknown")
+	}
 }
